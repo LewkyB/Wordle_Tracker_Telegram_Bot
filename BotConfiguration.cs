@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SolutionItems
+﻿namespace Wordle_Tracker_Telegram_Bot
 {
     public class BotConfiguration
     {
-        
+        public string BotToken { get; set; }
+        public string HostAddress { get; set; }
     }
 }
