@@ -5,7 +5,7 @@ services:
     image: ${DOCKER_REGISTRY-}wordletrackertelegrambot
     build:
       context: .
-      dockerfile: Wordle_Tracker_Telegram_Bot/Dockerfile
+      dockerfile: Dockerfile
     restart: always
     environment:
       - LETSENCRYPT_HOST=luketube.net, www.luketube.net
