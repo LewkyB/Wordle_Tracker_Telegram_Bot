@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "D5LxsxkEO8l2eA6VtAH4061k0qSR+KIhhkTyZyzy7rGtZUxE/ZHWJ+1FsfeQj9tAepfIPPK+QrglhXXlIq5Log==",
+  "dgSpecHash": "6Y706TxfIRix8wf+2f490wsXgc20yysAeJUNoBxmL5lBrV3eMBxaOHnpfM38Cb8KQFWt6okdqQmhZ8bFTYhYiA==",
   "success": true,
   "projectFilePath": "C:\\Users\\Luke\\source\\repos\\Wordle_Tracker_Telegram_Bot\\Wordle_Tracker_Telegram_Bot\\Wordle_Tracker_Telegram_Bot.csproj",
   "expectedPackageFiles": [
@@ -9,6 +9,7 @@
     "C:\\Users\\Luke\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",
     "C:\\Users\\Luke\\.nuget\\packages\\microsoft.extensions.apidescription.server\\3.0.0\\microsoft.extensions.apidescription.server.3.0.0.nupkg.sha512",
     "C:\\Users\\Luke\\.nuget\\packages\\microsoft.openapi\\1.2.3\\microsoft.openapi.1.2.3.nupkg.sha512",
+    "C:\\Users\\Luke\\.nuget\\packages\\microsoft.visualstudio.azure.containers.tools.targets\\1.14.0\\microsoft.visualstudio.azure.containers.tools.targets.1.14.0.nupkg.sha512",
     "C:\\Users\\Luke\\.nuget\\packages\\newtonsoft.json\\13.0.1\\newtonsoft.json.13.0.1.nupkg.sha512",
     "C:\\Users\\Luke\\.nuget\\packages\\newtonsoft.json.bson\\1.0.2\\newtonsoft.json.bson.1.0.2.nupkg.sha512",
     "C:\\Users\\Luke\\.nuget\\packages\\swashbuckle.aspnetcore\\6.2.3\\swashbuckle.aspnetcore.6.2.3.nupkg.sha512",
