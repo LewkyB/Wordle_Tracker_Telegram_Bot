@@ -16,10 +16,10 @@ namespace Wordle_Tracker_Telegram_Bot.Controllers
             return Ok();
         }
 
-        [HttpGet]
-        public IActionResult Get()
-        {
-            return StatusCode(999);
-        }
+        //[HttpGet]
+        //public IActionResult Get()
+        //{
+        //    return StatusCode(999);
+        //}
     }
 }
