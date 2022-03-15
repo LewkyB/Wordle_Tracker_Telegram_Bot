@@ -1,0 +1,15 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "BotName": "",
+  "BotUserName": "",
+  "BotConfiguration": {
+    "BotToken": "",
+    "HostAddress": ""
+  },
+  "AllowedHosts": "*"
+}
