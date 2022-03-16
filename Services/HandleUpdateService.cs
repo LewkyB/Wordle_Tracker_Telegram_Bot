@@ -59,6 +59,7 @@ public class HandleUpdateService
             "/keyboard" => SendReplyKeyboard(_botClient, message),
             "/remove" => RemoveKeyboard(_botClient, message),
             "/photo" => SendFile(_botClient, message),
+            "/webhookinfo" => GetWebhookInfo(_botClient, message),
             "/request" => RequestContactAndLocation(_botClient, message),
             _ => Usage(_botClient, message)
         };
@@ -150,15 +151,30 @@ public class HandleUpdateService
         static async Task<Message> Usage(ITelegramBotClient bot, Message message)
         {
             const string usage = "Usage:\n" +
-                                 "/inline   - send inline keyboard\n" +
-                                 "/keyboard - send custom keyboard\n" +
-                                 "/remove   - remove custom keyboard\n" +
-                                 "/photo    - send a photo\n" +
-                                 "/request  - request location or contact";
+                                 "/inline       - send inline keyboard\n" +
+                                 "/keyboard     - send custom keyboard\n" +
+                                 "/remove       - remove custom keyboard\n" +
+                                 "/photo        - send a photo\n" +
+                                 "/webhookinfo  - get uh webhook info\n" +
+                                 "/request      - request location or contact";
 
             return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
                                                   text: usage,
                                                   replyMarkup: new ReplyKeyboardRemove());
+        }
+
+        static async Task<Message> GetWebhookInfo(ITelegramBotClient bot, Message message)
+        {
+            var webHookInfo = await bot.GetWebhookInfoAsync();
+            return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
+                                                  text: $"URL: {webHookInfo.Url}\n" +
+                                                  $"Max Connections: {webHookInfo.MaxConnections}\n" +
+                                                  $"HasCustomCertificate: {webHookInfo.HasCustomCertificate}\n" +
+                                                  $"IP Address: {webHookInfo.IpAddress}\n" +
+                                                  $"Last Error Date: {webHookInfo.LastErrorDate}\n" +
+                                                  $"Last Error Message: {webHookInfo.LastErrorMessage}\n" +
+                                                  $"AllowedUpdates: {webHookInfo.AllowedUpdates}\n" +
+                                                  $"PendingUpdateCount: {webHookInfo.PendingUpdateCount}");
         }
     }
 
