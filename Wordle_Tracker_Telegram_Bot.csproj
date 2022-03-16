@@ -24,10 +24,4 @@
     <PackageReference Include="Telegram.Bot" Version="17.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="docker-compose.override.yml">
-      <DependentUpon>docker-compose.yml</DependentUpon>
-    </None>
-  </ItemGroup>
-
 </Project>

@@ -7,9 +7,9 @@ EXPOSE 80
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 COPY ["Wordle_Tracker_Telegram_Bot.csproj", "."]
-RUN dotnet restore "./Wordle_Tracker_Telegram_Bot.csproj"
+RUN dotnet restore "Wordle_Tracker_Telegram_Bot.csproj"
 COPY . .
-WORKDIR "/src/."
+WORKDIR "/src/"
 RUN dotnet build "Wordle_Tracker_Telegram_Bot.csproj" -c Release -o /app/build
 
 FROM build AS publish

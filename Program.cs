@@ -8,6 +8,7 @@ var botConfig = builder.Configuration.GetSection("BotConfiguration").Get<BotConf
 builder.Services.AddHttpClient("tgwebhook")
                 .AddTypedClient<ITelegramBotClient>(httpClient => new TelegramBotClient(botConfig.BotToken, httpClient));
 
+builder.Services.AddHostedService<ConfigureWebhook>();
 builder.Services.AddScoped<HandleUpdateService>();
 builder.Services.AddControllers().AddNewtonsoftJson();
 

@@ -3,6 +3,6 @@ version: '3.4'
 services:
   wordle_tracker_telegram_bot:
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=Development
     ports:
       - "80"
