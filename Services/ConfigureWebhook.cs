@@ -8,7 +8,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace Wordle_Tracker_Telegram_Bot.Services
 {
-    public class ConfigureWebhook :IHostedService
+    public class ConfigureWebhook : IHostedService
     {
         private readonly ILogger<ConfigureWebhook> _logger;
         private readonly IServiceProvider _services;
