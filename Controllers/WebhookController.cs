@@ -4,8 +4,6 @@ using Wordle_Tracker_Telegram_Bot.Services;
 
 namespace Wordle_Tracker_Telegram_Bot.Controllers
 {
-    [ApiController]
-    [Route("[controller]")]
     public class WebhookController : ControllerBase
     {
         [HttpPost]
