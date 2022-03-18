@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using Telegram.Bot;
 using Wordle_Tracker_Telegram_Bot;
+using Wordle_Tracker_Telegram_Bot.Data;
 using Wordle_Tracker_Telegram_Bot.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,9 +11,18 @@ var botConfig = builder.Configuration.GetSection("BotConfiguration").Get<BotConf
 builder.Services.AddHttpClient("tgwebhook")
                 .AddTypedClient<ITelegramBotClient>(httpClient => new TelegramBotClient(botConfig.BotToken, httpClient));
 
+builder.Services.AddDbContext<DatabaseContext>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL"));
+    options.EnableSensitiveDataLogging();
+    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+}, ServiceLifetime.Transient);
+
 builder.Services.AddHostedService<ConfigureWebhook>();
 
 builder.Services.AddScoped<HandleUpdateService>();
+builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IDatabaseRepository, DatabaseRepository>();
 
 builder.Services.AddControllers().AddNewtonsoftJson();
 

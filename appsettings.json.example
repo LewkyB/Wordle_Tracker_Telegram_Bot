@@ -11,5 +11,8 @@
     "BotToken": "",
     "HostAddress": ""
   },
+  "ConnectionStrings": {
+    "PostgreSQL": "host=db;database=SubredditDb;username=postgres;password=postgres",
+  },
   "AllowedHosts": "*"
 }

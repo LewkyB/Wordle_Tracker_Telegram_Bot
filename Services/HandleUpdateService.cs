@@ -5,6 +5,7 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.ReplyMarkups;
+using Wordle_Tracker_Telegram_Bot.Data.Models;
 
 namespace Wordle_Tracker_Telegram_Bot.Services;
 
@@ -12,11 +13,13 @@ public class HandleUpdateService
 {
     private readonly ITelegramBotClient _botClient;
     private readonly ILogger<HandleUpdateService> _logger;
+    private readonly IGameService _gameService;
 
-    public HandleUpdateService(ITelegramBotClient botClient, ILogger<HandleUpdateService> logger)
+    public HandleUpdateService(ITelegramBotClient botClient, ILogger<HandleUpdateService> logger, IGameService gameService)
     {
         _botClient = botClient;
         _logger = logger;
+        _gameService=gameService;
     }
 
     public async Task EchoAsync(Update update)
@@ -24,7 +27,7 @@ public class HandleUpdateService
         var handler = update.Type switch
         {
             // UpdateType.Unknown:
-            // UpdateType.ChannelPost:
+             //UpdateType.ChannelPost => AcknowledgeMessage(update),
             // UpdateType.EditedChannelPost:
             // UpdateType.ShippingQuery:
             // UpdateType.PreCheckoutQuery:
@@ -49,7 +52,7 @@ public class HandleUpdateService
 
     private async Task BotOnMessageReceived(Message message)
     {
-        _logger.LogInformation("Receive message type: {messageType}", message.Type);
+        _logger.LogInformation($"Receive message type: {message.Type}");
         if (message.Type != MessageType.Text)
             return;
 
@@ -61,10 +64,10 @@ public class HandleUpdateService
             "/photo" => SendFile(_botClient, message),
             "/webhookinfo" => GetWebhookInfo(_botClient, message),
             "/request" => RequestContactAndLocation(_botClient, message),
-            _ => Usage(_botClient, message)
+            _ => Usage(_gameService, _botClient, message)
         };
         Message sentMessage = await action;
-        _logger.LogInformation("The message was sent with id: {sentMessageId}", sentMessage.MessageId);
+        _logger.LogInformation($"The message was sent with id: {sentMessage.MessageId}");
 
         // Send inline keyboard
         // You can process responses in BotOnCallbackQueryReceived handler
@@ -148,18 +151,47 @@ public class HandleUpdateService
                                                   replyMarkup: RequestReplyKeyboard);
         }
 
-        static async Task<Message> Usage(ITelegramBotClient bot, Message message)
+        static async Task<Message> Usage(IGameService gameService, ITelegramBotClient bot, Message message)
         {
             const string usage = "Usage:\n" +
                                  "/inline       - send inline keyboard\n" +
                                  "/keyboard     - send custom keyboard\n" +
-                                 "/remove       - remove custom keyboard\n" +
+                                 "/weekly       - get this week's scores\n" +
                                  "/photo        - send a photo\n" +
                                  "/webhookinfo  - get uh webhook info\n" +
                                  "/request      - request location or contact";
 
+            if (message is null) new ArgumentNullException(nameof(message));
+
+            var chatMessage = new ChatMessage
+            {
+                ChatId = message.Chat.Id,
+                MessageId = message.MessageId,
+                Text = message.Text,
+                Date = message.Date,
+                SenderId = message.From.Id,
+                SenderFirstName = message.From.FirstName,
+                SenderLastName = message.From.LastName,
+                SenderUserName = message.From.Username,
+                IsSenderBot = message.From.IsBot
+            };
+
+            var week = await gameService.GetScoreBoardByDateRange();
+
+            // process the text
+            // not implemented
+            _ = await gameService.ParseGame(chatMessage);
+
+            // get the score
+            // how to track tiles: blank, yellow, green
+
             return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
-                                                  text: usage,
+                                                  text: $"message.Text:\t{message.Text}\n" +
+                                                  $"message.MessageId:\t{message.MessageId}\n" +
+                                                  $"message.From:\t{message.From}\n" +
+                                                  $"message.Date:\t{message.Date}\n" +
+                                                  $"message.Chat.Id:\t{message.Chat.Id}\n" +
+                                                  $"Scoreboard Date:\t{week}",
                                                   replyMarkup: new ReplyKeyboardRemove());
         }
 
@@ -194,7 +226,7 @@ public class HandleUpdateService
 
     private async Task BotOnInlineQueryReceived(InlineQuery inlineQuery)
     {
-        _logger.LogInformation("Received inline query from: {inlineQueryFromId}", inlineQuery.From.Id);
+        _logger.LogInformation($"Received inline query from: {inlineQuery.From.Id}");
 
         InlineQueryResult[] results = {
             // displayed result
@@ -215,7 +247,7 @@ public class HandleUpdateService
 
     private Task BotOnChosenInlineResultReceived(ChosenInlineResult chosenInlineResult)
     {
-        _logger.LogInformation("Received inline result: {chosenInlineResultId}", chosenInlineResult.ResultId);
+        _logger.LogInformation($"Received inline result: {chosenInlineResult.ResultId}");
         return Task.CompletedTask;
     }
 
@@ -223,7 +255,7 @@ public class HandleUpdateService
 
     private Task UnknownUpdateHandlerAsync(Update update)
     {
-        _logger.LogInformation("Unknown update type: {updateType}", update.Type);
+        _logger.LogInformation($"Unknown update type: {update.Type}");
         return Task.CompletedTask;
     }
 
@@ -235,7 +267,7 @@ public class HandleUpdateService
             _ => exception.ToString()
         };
 
-        _logger.LogInformation("HandleError: {ErrorMessage}", ErrorMessage);
+        _logger.LogInformation($"HandleError: {ErrorMessage}");
         return Task.CompletedTask;
     }
 }
