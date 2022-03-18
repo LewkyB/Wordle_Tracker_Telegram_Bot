@@ -1,4 +1,5 @@
-﻿using Telegram.Bot;
+﻿using System.Text.RegularExpressions;
+using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -6,6 +7,7 @@ using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.ReplyMarkups;
 using Wordle_Tracker_Telegram_Bot.Data.Models;
+using Wordle_Tracker_Telegram_Bot.Data.Models.Entities;
 
 namespace Wordle_Tracker_Telegram_Bot.Services;
 
@@ -161,7 +163,12 @@ public class HandleUpdateService
                                  "/webhookinfo  - get uh webhook info\n" +
                                  "/request      - request location or contact";
 
-            if (message is null) new ArgumentNullException(nameof(message));
+            //if (message is null) new ArgumentNullException(nameof(message));
+
+            string wordleScoreShareRegex = @"Wordle (\d+) (.)/6\n\w{0,2}((.|\n)*)";
+            Regex regex = new(wordleScoreShareRegex, RegexOptions.IgnoreCase);
+
+            var matches = regex.Matches(message.Text);
 
             var chatMessage = new ChatMessage
             {
@@ -176,7 +183,7 @@ public class HandleUpdateService
                 IsSenderBot = message.From.IsBot
             };
 
-            var week = await gameService.GetScoreBoardByDateRange();
+            var week = await gameService.GetScoreBoardByDateRange(chatMessage);
 
             // process the text
             // not implemented
@@ -191,12 +198,21 @@ public class HandleUpdateService
                                                   $"message.From:\t{message.From}\n" +
                                                   $"message.Date:\t{message.Date}\n" +
                                                   $"message.Chat.Id:\t{message.Chat.Id}\n" +
+                                                  $"group 1 {matches[0].Groups[1]}  \n" +
+                                                  $"group 2 {matches[0].Groups[2]}  \n" +
+                                                  $"group 3 {matches[0].Groups[3]}  \n" +
+                                                  $"group 4 {matches[0].Groups[4]}  \n" +
+                                                  $"group 5 {matches[0].Groups[5]}  \n" +
                                                   $"Scoreboard Date:\t{week}",
                                                   replyMarkup: new ReplyKeyboardRemove());
         }
 
         static async Task<Message> GetWebhookInfo(ITelegramBotClient bot, Message message)
         {
+            string wordleScoreShareRegex = @"Wordle (\d+) (.)/6\n\w{0,2}((.|\n)*)";
+            Regex regex = new(wordleScoreShareRegex, RegexOptions.IgnoreCase);
+
+            var matches = regex.Matches(message.Text);
             var webHookInfo = await bot.GetWebhookInfoAsync();
             return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
                                                   text: $"URL: {webHookInfo.Url}\n" +
@@ -204,6 +220,7 @@ public class HandleUpdateService
                                                   $"HasCustomCertificate: {webHookInfo.HasCustomCertificate}\n" +
                                                   $"IP Address: {webHookInfo.IpAddress}\n" +
                                                   $"Last Error Date: {webHookInfo.LastErrorDate}\n" +
+                                                  $"Green \U0001F7E9  \n" +
                                                   $"Last Error Message: {webHookInfo.LastErrorMessage}\n" +
                                                   $"AllowedUpdates: {webHookInfo.AllowedUpdates}\n" +
                                                   $"PendingUpdateCount: {webHookInfo.PendingUpdateCount}");

@@ -1,7 +1,8 @@
-﻿namespace Wordle_Tracker_Telegram_Bot.Data.Models
+﻿namespace Wordle_Tracker_Telegram_Bot.Data.Models.Entities
 {
     public class GameSummary
     {
+        public long? GameSummaryId { get; set; }
         public long? ChatId { get; set; }
         public int? MessageId { get; set; }
         public int? PlayerId { get; set; }

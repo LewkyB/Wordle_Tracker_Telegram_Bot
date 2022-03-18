@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Wordle_Tracker_Telegram_Bot.Data.Models;
+using Wordle_Tracker_Telegram_Bot.Data.Models.Entities;
 
 namespace Wordle_Tracker_Telegram_Bot.Data
 {
@@ -16,6 +17,8 @@ namespace Wordle_Tracker_Telegram_Bot.Data
     }
     public interface IDatabaseRepository
     {
+        IQueryable<GameSummary> GetPlayerGamesByDateRange(int? playerId, DateTime startDateTime, DateTime endDateTime);
+        IQueryable<PlayerProfile> GetPlayersByChatId(long? chatId);
         bool IsDuplicateMessage(int? messageId);
     }
 
@@ -29,32 +32,8 @@ namespace Wordle_Tracker_Telegram_Bot.Data
             _databaseContext=databaseContext;
         }
 
-        public NotImplementedException GetPlayerScoreByDateRange(int PlayerId, DateTime startDate, DateTime endDate)
-        {
-            // weekly
-            // monthly
-            // yearly
-            // total
-            return new NotImplementedException();
-        }
-
-        public NotImplementedException GetChatSummaryByDateRange(int ChatId, DateTime startDate, DateTime endDate)
-        {
-            // weekly
-            // monthly
-            // yearly
-            // total
-
-            // foreach player with ChatId
-            //      print name getScoreByDateRange(playerId, start, end)
-
-            return new NotImplementedException();
-        }
-
         public NotImplementedException SaveGame(int playerId, int chatId, int messageId)
         {
-
-
             return new NotImplementedException();
         }
 
@@ -70,8 +49,18 @@ namespace Wordle_Tracker_Telegram_Bot.Data
             return false;
         }
 
+        public IQueryable<PlayerProfile> GetPlayersByChatId(long? chatId)
+        {
+            return _databaseContext.PlayerProfiles
+                .Where(profile => profile.ChatId == chatId);
+        }
 
-
+        public IQueryable<GameSummary> GetPlayerGamesByDateRange(int? playerId, DateTime startDateTime, DateTime endDateTime)
+        {
+            return _databaseContext.GameSummaries
+                .Where(game => game.PlayerId == playerId)
+                .Where(game => game.DatePlayed > startDateTime && game.DatePlayed <= endDateTime);
+        }
     }
 
 }

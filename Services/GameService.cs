@@ -1,11 +1,12 @@
 ﻿using Wordle_Tracker_Telegram_Bot.Data;
 using Wordle_Tracker_Telegram_Bot.Data.Models;
+using Wordle_Tracker_Telegram_Bot.Data.Models.Entities;
 
 namespace Wordle_Tracker_Telegram_Bot.Services
 {
     public interface IGameService
     {
-        Task<DateTime> GetScoreBoardByDateRange();
+        Task<IEnumerable<ScoreboardRow>> GetScoreBoardByDateRange(ChatMessage chatMessage);
         Task<GameSummary> ParseGame(ChatMessage chatMessage);
     }
 
@@ -19,21 +20,42 @@ namespace Wordle_Tracker_Telegram_Bot.Services
             _databaseRepository=databaseRepository;
         }
 
-        public async Task<DateTime> GetScoreBoardByDateRange()
+        public async Task<IEnumerable<ScoreboardRow>> GetScoreBoardByDateRange(ChatMessage chatMessage)
         {
-            //
-            //TimeSpan week = DateTime.;
+            // get chatId
+            // get all PlayerIds with chatId
+            var players = _databaseRepository.GetPlayersByChatId(chatMessage.ChatId);
 
-            // a week should start on monday and reset on monday
+            List<ScoreboardRow> scores = new List<ScoreboardRow>();
 
-            // a month should be 1st to end of month
+            // for each PlayerId
+            foreach (var player in players)
+            {
+                // get all the games between now and {DateTime.Now.StartOfWeek(DayOfWeek.Monday)}
+                var weekStart = DateTime.Now.StartOfWeek(DayOfWeek.Monday);
+                var now = DateTime.Now;
 
-            // make look up table of each monday to monday span for each year
+                var playerGames = _databaseRepository.GetPlayerGamesByDateRange(player.PlayerId, startDateTime: weekStart, endDateTime: now);
 
-            var dateTime = DateTime.Now.StartOfWeek(DayOfWeek.Monday);
+                var gamesPlayed = playerGames.Count();
 
-            return dateTime;
+                // add up the scores of all of the games
+                var playerWeeklyTotalScore = playerGames.Sum(game => game.Score);
 
+                var averageScore = playerWeeklyTotalScore / gamesPlayed;
+
+                var playerScoreboardRow = new ScoreboardRow
+                {
+                    Name = player.FirstName,
+                    Score = playerWeeklyTotalScore,
+                    GamesPlayed = gamesPlayed,
+                    AverageScore = averageScore,
+                };
+
+                scores.Add(playerScoreboardRow);
+            }
+
+            return scores.OrderByDescending(s => s.Score);
         }
 
         public async Task SubmitScore(int game)
@@ -62,7 +84,7 @@ namespace Wordle_Tracker_Telegram_Bot.Services
 
             if (chatMessage is null)
             {
-                throw new ArgumentNullException(nameof(chatMessage));
+                _logger.LogError($"{nameof(chatMessage)} is null.");
             }
 
             // if messageId in system, then ignore
