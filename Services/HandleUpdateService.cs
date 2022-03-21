@@ -1,13 +1,9 @@
-﻿using System.Text.RegularExpressions;
-using Telegram.Bot;
+﻿using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
-using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.ReplyMarkups;
-using Wordle_Tracker_Telegram_Bot.Data.Models;
-using Wordle_Tracker_Telegram_Bot.Data.Models.Entities;
 
 namespace Wordle_Tracker_Telegram_Bot.Services;
 
@@ -29,7 +25,7 @@ public class HandleUpdateService
         var handler = update.Type switch
         {
             // UpdateType.Unknown:
-             //UpdateType.ChannelPost => AcknowledgeMessage(update),
+            // UpdateType.ChannelPost:
             // UpdateType.EditedChannelPost:
             // UpdateType.ShippingQuery:
             // UpdateType.PreCheckoutQuery:
@@ -55,139 +51,37 @@ public class HandleUpdateService
     private async Task BotOnMessageReceived(Message message)
     {
         _logger.LogInformation($"Receive message type: {message.Type}");
+
         if (message.Type != MessageType.Text)
             return;
 
         var action = message.Text!.Split(' ')[0] switch
         {
-            "/inline" => SendInlineKeyboard(_botClient, message),
-            "/keyboard" => SendReplyKeyboard(_botClient, message),
-            "/remove" => RemoveKeyboard(_botClient, message),
-            "/photo" => SendFile(_botClient, message),
-            "/webhookinfo" => GetWebhookInfo(_botClient, message),
-            "/request" => RequestContactAndLocation(_botClient, message),
-            _ => Usage(_gameService, _botClient, message)
+            "/webhookinfo" => GetWebhookInfo(_botClient, message, _gameService),
+            "/score" => GetWebhookInfo(_botClient, message, _gameService),
+            _ => ProcessMessage(_gameService, _botClient, message, _logger)
         };
+
         Message sentMessage = await action;
+
         _logger.LogInformation($"The message was sent with id: {sentMessage.MessageId}");
 
-        // Send inline keyboard
-        // You can process responses in BotOnCallbackQueryReceived handler
-        static async Task<Message> SendInlineKeyboard(ITelegramBotClient bot, Message message)
-        {
-            await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
-
-            // Simulate longer running task
-            await Task.Delay(500);
-
-            InlineKeyboardMarkup inlineKeyboard = new(
-                new[]
-                {
-                    // first row
-                    new []
-                    {
-                        InlineKeyboardButton.WithCallbackData("1.1", "11"),
-                        InlineKeyboardButton.WithCallbackData("1.2", "12"),
-                    },
-                    // second row
-                    new []
-                    {
-                        InlineKeyboardButton.WithCallbackData("2.1", "21"),
-                        InlineKeyboardButton.WithCallbackData("2.2", "22"),
-                    },
-                });
-
-            return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
-                                                  text: "Choose",
-                                                  replyMarkup: inlineKeyboard);
-        }
-
-        static async Task<Message> SendReplyKeyboard(ITelegramBotClient bot, Message message)
-        {
-            ReplyKeyboardMarkup replyKeyboardMarkup = new(
-                new[]
-                {
-                        new KeyboardButton[] { "1.1", "1.2" },
-                        new KeyboardButton[] { "2.1", "2.2" },
-                })
-            {
-                ResizeKeyboard = true
-            };
-
-            return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
-                                                  text: "Choose",
-                                                  replyMarkup: replyKeyboardMarkup);
-        }
-
-        static async Task<Message> RemoveKeyboard(ITelegramBotClient bot, Message message)
-        {
-            return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
-                                                  text: "Removing keyboard",
-                                                  replyMarkup: new ReplyKeyboardRemove());
-        }
-
-        static async Task<Message> SendFile(ITelegramBotClient bot, Message message)
-        {
-            await bot.SendChatActionAsync(message.Chat.Id, ChatAction.UploadPhoto);
-
-            const string filePath = @"Files/tux.png";
-            using FileStream fileStream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            var fileName = filePath.Split(Path.DirectorySeparatorChar).Last();
-
-            return await bot.SendPhotoAsync(chatId: message.Chat.Id,
-                                            photo: new InputOnlineFile(fileStream, fileName),
-                                            caption: "Nice Picture");
-        }
-
-        static async Task<Message> RequestContactAndLocation(ITelegramBotClient bot, Message message)
-        {
-            ReplyKeyboardMarkup RequestReplyKeyboard = new(
-                new[]
-                {
-                    KeyboardButton.WithRequestLocation("Location"),
-                    KeyboardButton.WithRequestContact("Contact"),
-                });
-
-            return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
-                                                  text: "Who or Where are you?",
-                                                  replyMarkup: RequestReplyKeyboard);
-        }
-
-        static async Task<Message> Usage(IGameService gameService, ITelegramBotClient bot, Message message)
+        // passing the logger like this is gross
+        static async Task<Message> ProcessMessage(IGameService gameService, ITelegramBotClient bot, Message message, ILogger<HandleUpdateService> logger)
         {
             const string usage = "Usage:\n" +
-                                 "/inline       - send inline keyboard\n" +
-                                 "/keyboard     - send custom keyboard\n" +
-                                 "/weekly       - get this week's scores\n" +
-                                 "/photo        - send a photo\n" +
-                                 "/webhookinfo  - get uh webhook info\n" +
-                                 "/request      - request location or contact";
+                                 "/score       - get this week's scores\n" +
+                                 "/webhookinfo  - get uh webhook info\n";
 
-            //if (message is null) new ArgumentNullException(nameof(message));
-
-            string wordleScoreShareRegex = @"Wordle (\d+) (.)/6\n\w{0,2}((.|\n)*)";
-            Regex regex = new(wordleScoreShareRegex, RegexOptions.IgnoreCase);
-
-            var matches = regex.Matches(message.Text);
-
-            var chatMessage = new ChatMessage
+            if (message is null)
             {
-                ChatId = message.Chat.Id,
-                MessageId = message.MessageId,
-                Text = message.Text,
-                Date = message.Date,
-                SenderId = message.From.Id,
-                SenderFirstName = message.From.FirstName,
-                SenderLastName = message.From.LastName,
-                SenderUserName = message.From.Username,
-                IsSenderBot = message.From.IsBot
-            };
+                logger.LogInformation($"{nameof(message)} is null");
+                return new Message();
+            }
 
-            var week = await gameService.GetScoreBoardByDateRange(chatMessage);
+            await gameService.CheckMessageForGame(message);
 
-            // process the text
-            // not implemented
-            _ = await gameService.ParseGame(chatMessage);
+            var week = await gameService.GetScoreBoardByDateRange(message);
 
             // get the score
             // how to track tiles: blank, yellow, green
@@ -198,21 +92,13 @@ public class HandleUpdateService
                                                   $"message.From:\t{message.From}\n" +
                                                   $"message.Date:\t{message.Date}\n" +
                                                   $"message.Chat.Id:\t{message.Chat.Id}\n" +
-                                                  $"group 1 {matches[0].Groups[1]}  \n" +
-                                                  $"group 2 {matches[0].Groups[2]}  \n" +
-                                                  $"group 3 {matches[0].Groups[3]}  \n" +
-                                                  $"group 4 {matches[0].Groups[4]}  \n" +
-                                                  $"group 5 {matches[0].Groups[5]}  \n" +
-                                                  $"Scoreboard Date:\t{week}",
+                                                  $"Scoreboard Date:\t",
+                                                  //$"Scoreboard Date:\t{week}",
                                                   replyMarkup: new ReplyKeyboardRemove());
         }
 
-        static async Task<Message> GetWebhookInfo(ITelegramBotClient bot, Message message)
+        static async Task<Message> GetWebhookInfo(ITelegramBotClient bot, Message message, IGameService gameService)
         {
-            string wordleScoreShareRegex = @"Wordle (\d+) (.)/6\n\w{0,2}((.|\n)*)";
-            Regex regex = new(wordleScoreShareRegex, RegexOptions.IgnoreCase);
-
-            var matches = regex.Matches(message.Text);
             var webHookInfo = await bot.GetWebhookInfoAsync();
             return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
                                                   text: $"URL: {webHookInfo.Url}\n" +
@@ -220,7 +106,6 @@ public class HandleUpdateService
                                                   $"HasCustomCertificate: {webHookInfo.HasCustomCertificate}\n" +
                                                   $"IP Address: {webHookInfo.IpAddress}\n" +
                                                   $"Last Error Date: {webHookInfo.LastErrorDate}\n" +
-                                                  $"Green \U0001F7E9  \n" +
                                                   $"Last Error Message: {webHookInfo.LastErrorMessage}\n" +
                                                   $"AllowedUpdates: {webHookInfo.AllowedUpdates}\n" +
                                                   $"PendingUpdateCount: {webHookInfo.PendingUpdateCount}");

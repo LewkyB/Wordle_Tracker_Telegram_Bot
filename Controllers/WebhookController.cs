@@ -13,11 +13,5 @@ namespace Wordle_Tracker_Telegram_Bot.Controllers
             await handleUpdateService.EchoAsync(update);
             return Ok();
         }
-
-        //[HttpGet]
-        //public IActionResult Get()
-        //{
-        //    return StatusCode(999);
-        //}
     }
 }

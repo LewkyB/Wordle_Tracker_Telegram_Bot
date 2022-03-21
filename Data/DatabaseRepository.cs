@@ -8,18 +8,19 @@ namespace Wordle_Tracker_Telegram_Bot.Data
     {
         public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options)
         {
-
         }
 
-        public DbSet<ChatMessage>? ChatMessages { get; set; }
         public DbSet<PlayerProfile>? PlayerProfiles { get; set; }
         public DbSet<GameSummary>? GameSummaries { get; set; }
     }
+
     public interface IDatabaseRepository
     {
         IQueryable<GameSummary> GetPlayerGamesByDateRange(int? playerId, DateTime startDateTime, DateTime endDateTime);
         IQueryable<PlayerProfile> GetPlayersByChatId(long? chatId);
-        bool IsDuplicateMessage(int? messageId);
+        bool IsDuplicateGame(int? messageId);
+        Task SaveGame(GameSummary gameSummary);
+        Task<bool> CheckIfSenderIsInDatabase(long id);
     }
 
     public class DatabaseRepository : IDatabaseRepository
@@ -32,16 +33,11 @@ namespace Wordle_Tracker_Telegram_Bot.Data
             _databaseContext=databaseContext;
         }
 
-        public NotImplementedException SaveGame(int playerId, int chatId, int messageId)
-        {
-            return new NotImplementedException();
-        }
-
-        public bool IsDuplicateMessage(int? messageId)
+        public bool IsDuplicateGame(int? messageId)
         {
             if (messageId == null) throw new ArgumentNullException(nameof(messageId));
 
-            if (_databaseContext.ChatMessages.Any(chatMessage => chatMessage.MessageId == messageId))
+            if (_databaseContext.GameSummaries.Any(game => game.MessageId == messageId))
             {
                 return true;
             }
@@ -60,6 +56,36 @@ namespace Wordle_Tracker_Telegram_Bot.Data
             return _databaseContext.GameSummaries
                 .Where(game => game.PlayerId == playerId)
                 .Where(game => game.DatePlayed > startDateTime && game.DatePlayed <= endDateTime);
+        }
+
+        public async Task SaveGame(GameSummary gameSummary)
+        {
+            try
+            {
+                // if better than bestGame
+                    // update database.bestGame to game
+
+                // if worst than worstGame
+                    // update
+
+                // save game
+                await _databaseContext.GameSummaries.AddAsync(gameSummary);
+                await _databaseContext.SaveChangesAsync();
+
+            }
+            catch (OperationCanceledException)
+            {
+                throw new OperationCanceledException();
+            }
+            catch (DbUpdateException)
+            {
+                throw new DbUpdateException();
+            }
+        }
+        public async Task<bool> CheckIfSenderIsInDatabase(long id)
+        {
+            return await _databaseContext.PlayerProfiles
+                .AnyAsync(profile => profile.PlayerId == id);
         }
     }
 
