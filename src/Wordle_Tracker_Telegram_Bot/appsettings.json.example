@@ -1,0 +1,27 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "BotName": "", // optional TODO: remove?
+  "BotUserName": "", // optional TODO: remove?
+  "BotConfiguration": {
+    "BotToken": "", // required
+    "HostAddress": "" // required
+  },
+  "ConnectionStrings": {
+    "PostgreSQL": "host=db;database=SubredditDb;username=postgres;password=postgres"
+  },
+  "HealthChecksUI": {
+    "HealthChecks": [
+      {
+        "Name": "My Health Checks",
+        "Uri": "/health"
+      }
+    ],
+    "EvaluationTimeInSeconds": 5
+  },
+  "AllowedHosts": "*"
+}

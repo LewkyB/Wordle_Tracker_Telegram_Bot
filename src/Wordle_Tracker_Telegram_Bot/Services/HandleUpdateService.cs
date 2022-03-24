@@ -30,11 +30,11 @@ public class HandleUpdateService
             // UpdateType.ShippingQuery:
             // UpdateType.PreCheckoutQuery:
             // UpdateType.Poll:
-            UpdateType.Message => BotOnMessageReceived(update.Message!),
-            UpdateType.EditedMessage => BotOnMessageReceived(update.EditedMessage!),
-            UpdateType.CallbackQuery => BotOnCallbackQueryReceived(update.CallbackQuery!),
-            UpdateType.InlineQuery => BotOnInlineQueryReceived(update.InlineQuery!),
-            UpdateType.ChosenInlineResult => BotOnChosenInlineResultReceived(update.ChosenInlineResult!),
+            UpdateType.Message => BotOnMessageReceivedAsync(update.Message!),
+            UpdateType.EditedMessage => BotOnMessageReceivedAsync(update.EditedMessage!),
+            UpdateType.CallbackQuery => BotOnCallbackQueryReceivedAsync(update.CallbackQuery!),
+            UpdateType.InlineQuery => BotOnInlineQueryReceivedAsync(update.InlineQuery!),
+            UpdateType.ChosenInlineResult => BotOnChosenInlineResultReceivedAsync(update.ChosenInlineResult!),
             _ => UnknownUpdateHandlerAsync(update)
         };
 
@@ -48,7 +48,7 @@ public class HandleUpdateService
         }
     }
 
-    private async Task BotOnMessageReceived(Message message)
+    private async Task BotOnMessageReceivedAsync(Message message)
     {
         _logger.LogInformation($"Receive message type: {message.Type}");
 
@@ -70,21 +70,22 @@ public class HandleUpdateService
         static async Task<Message> ProcessMessage(IGameService gameService, ITelegramBotClient bot, Message message, ILogger<HandleUpdateService> logger)
         {
             const string usage = "Usage:\n" +
-                                 "/score       - get this week's scores\n" +
+                                 "/settimezone  - set the uh time zone\n" +
+                                 "/score        - get this week's scores\n" +
                                  "/webhookinfo  - get uh webhook info\n";
 
             if (message is null)
             {
                 logger.LogInformation($"{nameof(message)} is null");
-                return new Message();
+                return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
+                                                      text: usage,
+                                                      replyMarkup: new ReplyKeyboardRemove());
             }
 
-            await gameService.CheckMessageForGame(message);
+            // TODO: broken database calls
+            //await gameService.CheckMessageForGame(message, new CancellationToken());
 
-            var week = await gameService.GetScoreBoardByDateRange(message);
-
-            // get the score
-            // how to track tiles: blank, yellow, green
+            var week =  gameService.GetScoreBoardByDateRange(message);
 
             return await bot.SendTextMessageAsync(chatId: message.Chat.Id,
                                                   text: $"message.Text:\t{message.Text}\n" +
@@ -112,8 +113,7 @@ public class HandleUpdateService
         }
     }
 
-    // Process Inline Keyboard callback data
-    private async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery)
+    private async Task BotOnCallbackQueryReceivedAsync(CallbackQuery callbackQuery)
     {
         await _botClient.AnswerCallbackQueryAsync(
             callbackQueryId: callbackQuery.Id,
@@ -126,7 +126,7 @@ public class HandleUpdateService
 
     #region Inline Mode
 
-    private async Task BotOnInlineQueryReceived(InlineQuery inlineQuery)
+    private async Task BotOnInlineQueryReceivedAsync(InlineQuery inlineQuery)
     {
         _logger.LogInformation($"Received inline query from: {inlineQuery.From.Id}");
 
@@ -147,7 +147,7 @@ public class HandleUpdateService
                                                 cacheTime: 0);
     }
 
-    private Task BotOnChosenInlineResultReceived(ChosenInlineResult chosenInlineResult)
+    private Task BotOnChosenInlineResultReceivedAsync(ChosenInlineResult chosenInlineResult)
     {
         _logger.LogInformation($"Received inline result: {chosenInlineResult.ResultId}");
         return Task.CompletedTask;

@@ -8,8 +8,9 @@ namespace Wordle_Tracker_Telegram_Bot.Services
 {
     public interface IGameService
     {
-        Task CheckMessageForGame(Message message);
-        Task<IEnumerable<ScoreboardRow>> GetScoreBoardByDateRange(Message message);
+        Task CheckIfSenderIsInDatabaseAsync(Message message);
+        Task CheckMessageForGameAsync(Message message, CancellationToken cancellationToken);
+        IEnumerable<ScoreboardRow> GetScoreBoardByDateRange(Message message);
     }
 
     public class GameService : IGameService
@@ -22,7 +23,7 @@ namespace Wordle_Tracker_Telegram_Bot.Services
             _databaseRepository=databaseRepository;
         }
 
-        public async Task<IEnumerable<ScoreboardRow>> GetScoreBoardByDateRange(Message message)
+        public IEnumerable<ScoreboardRow> GetScoreBoardByDateRange(Message message)
         {
             // get chatId
             // get all PlayerIds with chatId
@@ -33,7 +34,7 @@ namespace Wordle_Tracker_Telegram_Bot.Services
             // for each PlayerId
             if (players != null) return scores;
 
-            foreach (var player in players)
+            foreach (var player in players!)
             {
                 // get all the games between now and {DateTime.Now.StartOfWeek(DayOfWeek.Monday)}
                 var weekStart = DateTime.Now.StartOfWeek(DayOfWeek.Monday);
@@ -62,12 +63,16 @@ namespace Wordle_Tracker_Telegram_Bot.Services
             return scores.OrderByDescending(s => s.Score);
         }
 
-        public async Task CheckMessageForGame(Message message)
+        public async Task CheckMessageForGameAsync(Message message, CancellationToken cancellationToken)
         {
             if (_databaseRepository.IsDuplicateGame(message.MessageId)) return;
             if (message.Text is null) return;
 
-            await CheckIfSenderIsInDatabase(message.From.Id);
+            if (!await _databaseRepository.CheckIfSenderIsInDatabase(message))
+            {
+                // sender not in database
+                // add sender
+            }
 
             string wordleScoreShareRegex = @"(\w+) (\w+)(?: (\w+))";
             Regex regex = new(wordleScoreShareRegex, RegexOptions.IgnoreCase);
@@ -80,6 +85,9 @@ namespace Wordle_Tracker_Telegram_Bot.Services
                 int.TryParse(matches[0].Groups[3].Value, out int attempts)
                 )
             {
+                // ask for confirmation that the player wants to submit this score for today's wordle
+                // cancellation token?
+
                 GameSummary gameSummary = new GameSummary()
                 {
                     ChatId = message?.Chat.Id ?? 0,
@@ -96,20 +104,30 @@ namespace Wordle_Tracker_Telegram_Bot.Services
             }
         }
 
-        public async Task CheckIfSenderIsInDatabase(long id)
+        public async Task CheckIfSenderIsInDatabaseAsync(Message message)
         {
-            if(!await _databaseRepository.CheckIfSenderIsInDatabase(id))
+            if(!await _databaseRepository.CheckIfSenderIsInDatabase(message))
             {
                 // logic to add sender to PlayerProfile
             }
         }
 
-        public async Task<bool> IsPlayerAuthorizedToSubmitGame()
+        private bool IsPlayerAuthorizedToSubmitGame(int playerId)
         {
             // figure out when nyt resets the wordle word
 
             // only allow PlayerId to submit single game in 24 hr
             // period, resetting when wordle word does
+
+            // has the player submitted a game today?
+            var dayStart = DateTime.Today;
+            var dayEnd = DateTime.Today.AddDays(1);
+
+            var playedGameToday = _databaseRepository.GetPlayerGamesByDateRange(playerId, dayStart, dayEnd);
+
+            // might not be the best way to check
+            if (playedGameToday.Any(x => x.GameSummaryId.HasValue)) return true;
+
             return false;
         }
     }

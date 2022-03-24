@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Wordle_Tracker_Telegram_Bot": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:53302;http://localhost:53303"
+    }
+  }
+}

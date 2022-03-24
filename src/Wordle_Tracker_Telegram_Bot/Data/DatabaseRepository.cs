@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Telegram.Bot.Types;
 using Wordle_Tracker_Telegram_Bot.Data.Models;
 using Wordle_Tracker_Telegram_Bot.Data.Models.Entities;
 
@@ -16,11 +17,11 @@ namespace Wordle_Tracker_Telegram_Bot.Data
 
     public interface IDatabaseRepository
     {
+        Task<bool> CheckIfSenderIsInDatabase(Message message);
         IQueryable<GameSummary> GetPlayerGamesByDateRange(int? playerId, DateTime startDateTime, DateTime endDateTime);
         IQueryable<PlayerProfile> GetPlayersByChatId(long? chatId);
         bool IsDuplicateGame(int? messageId);
         Task SaveGame(GameSummary gameSummary);
-        Task<bool> CheckIfSenderIsInDatabase(long id);
     }
 
     public class DatabaseRepository : IDatabaseRepository
@@ -33,15 +34,18 @@ namespace Wordle_Tracker_Telegram_Bot.Data
             _databaseContext=databaseContext;
         }
 
+        // TODO: broken
         public bool IsDuplicateGame(int? messageId)
         {
             if (messageId == null) throw new ArgumentNullException(nameof(messageId));
 
             if (_databaseContext.GameSummaries.Any(game => game.MessageId == messageId))
             {
+                // duplicate game found
                 return true;
             }
 
+            // no duplicate game found
             return false;
         }
 
@@ -82,10 +86,15 @@ namespace Wordle_Tracker_Telegram_Bot.Data
                 throw new DbUpdateException();
             }
         }
-        public async Task<bool> CheckIfSenderIsInDatabase(long id)
+        public async Task<bool> CheckIfSenderIsInDatabase(Message message)
         {
-            return await _databaseContext.PlayerProfiles
-                .AnyAsync(profile => profile.PlayerId == id);
+            bool playerProfilePresent = await _databaseContext.PlayerProfiles.AnyAsync(playerProfile => playerProfile.PlayerId == message.From.Id);
+
+            if (!playerProfilePresent)
+            {
+                // add player to database
+            }
+            return false;
         }
     }
 

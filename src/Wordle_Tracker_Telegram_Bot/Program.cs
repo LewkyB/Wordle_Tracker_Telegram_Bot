@@ -3,6 +3,9 @@ using Telegram.Bot;
 using Wordle_Tracker_Telegram_Bot;
 using Wordle_Tracker_Telegram_Bot.Data;
 using Wordle_Tracker_Telegram_Bot.Services;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using HealthChecks.UI.Client;
+using Wordle_Tracker_Telegram_Bot.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,17 +27,36 @@ builder.Services.AddScoped<HandleUpdateService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IDatabaseRepository, DatabaseRepository>();
 
+// Health Checks
+//builder.Services.AddHealthChecks()
+//    .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL"), tags: new[] { "database" })
+//    .AddCheck<ServerHealthCheck>("ServerHealthCheck", tags: new[] { "custom" });
+//builder.Services.AddHealthChecksUI().AddInMemoryStorage();
+
+// swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 builder.Services.AddControllers().AddNewtonsoftJson();
 
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseRouting();
 
 app.UseAuthorization();
+
+//app.MapHealthChecksUI();
+//app.MapHealthChecks("/health/custom", new HealthCheckOptions
+//{
+//    Predicate = reg => reg.Tags.Contains("custom"),
+//    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+//});
 
 app.UseEndpoints(endpoints =>
 {
